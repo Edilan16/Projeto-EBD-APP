@@ -1,12 +1,12 @@
 specVersion: "v1"
-serviceId: "y"
-location: "southamerica-east1"
+serviceId: "attendance-app"
+location: "us-central1"
 schema:
   source: "./schema"
   datasource:
     postgresql:
       database: "fdcdb"
       cloudSql:
-        instanceId: "y"
+        instanceId: "attendance-app-fdc"
       # schemaValidation: "COMPATIBLE"
 connectorDirs: ["./connector"]

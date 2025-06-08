@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { db } from '../firebase';
 import {
@@ -20,11 +21,9 @@ export default function Attendance() {
   const [records, setRecords] = useState({});
   const [toast, setToast] = useState('');
 
-  // calcula o domingo da semana atual
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
   const weekOf = format(weekStart, 'yyyy-MM-dd');
 
-  // carrega ou cria o documento de attendance para weekOf
   useEffect(() => {
     const q = query(collection(db, 'attendance'), where('weekOf', '==', weekOf));
     const unsub = onSnapshot(q, snap => {
@@ -38,7 +37,6 @@ export default function Attendance() {
     return () => unsub();
   }, [weekOf]);
 
-  // carrega lista de alunos
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'students'), s => {
       setStudents(s.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -46,7 +44,6 @@ export default function Attendance() {
     return () => unsub();
   }, []);
 
-  // carrega registros de presença
   useEffect(() => {
     if (!attendanceId) return;
     const recColl = collection(db, 'attendance', attendanceId, 'records');
@@ -58,13 +55,11 @@ export default function Attendance() {
     return () => unsub();
   }, [attendanceId]);
 
-  // Toast temporário
   const showToast = msg => {
     setToast(msg);
     setTimeout(() => setToast(''), 2000);
   };
 
-  // Salva múltiplos registros em batch
   const handleBulkSave = useCallback(async (presentValue = true) => {
     if (!attendanceId) return;
     const batch = writeBatch(db);
@@ -72,6 +67,7 @@ export default function Attendance() {
       const recordRef = doc(db, 'attendance', attendanceId, 'records', student.id);
       batch.set(recordRef, {
         studentId: student.id,
+        studentName: student.name,
         present: presentValue,
         date: weekOf,
         updatedAt: serverTimestamp()
@@ -81,16 +77,17 @@ export default function Attendance() {
     showToast(presentValue ? 'Todos marcados como presentes!' : 'Todos marcados como ausentes!');
   }, [attendanceId, students, weekOf]);
 
-  // Atualiza presença de um aluno (confirmação só ao remover)
   const togglePresent = useCallback(async (studentId, present, studentName) => {
     if (!attendanceId) return;
     if (!present) {
       const confirmed = window.confirm(`Tem certeza que deseja remover presença para "${studentName}"?`);
       if (!confirmed) return;
     }
+    const student = students.find(s => s.id === studentId);
     const recordRef = doc(db, 'attendance', attendanceId, 'records', studentId);
     await setDoc(recordRef, {
       studentId,
+      studentName: student?.name ?? 'Desconhecido',
       present,
       date: weekOf,
       updatedAt: serverTimestamp()
@@ -100,16 +97,15 @@ export default function Attendance() {
         ? `Presença marcada para "${studentName}"`
         : `Presença removida para "${studentName}"`
     );
-  }, [attendanceId, weekOf]);
+  }, [attendanceId, weekOf, students]);
 
-  // Debounce do toggle
   const debouncedToggle = useMemo(
     () => debounce((id, present, name) => togglePresent(id, present, name), 200),
     [togglePresent]
   );
 
   return (
-    <div>
+      <div>
       <h2>Presenças da semana: {weekOf}</h2>
       <div className="mb-4 flex gap-2">
         <button
@@ -130,8 +126,8 @@ export default function Attendance() {
           {toast}
         </div>
       )}
-      <ul className="space-y-2">
-        {students
+      <ul className="space-y-2">{
+          students
           .slice()
           .sort((a, b) => a.name.localeCompare(b.name))
           .map(s => {
@@ -139,11 +135,8 @@ export default function Attendance() {
             return (
               <li
                 key={s.id}
-                className={`flex items-center justify-between p-2 rounded transition ${
-                  isPresent
-                    ? 'bg-green-100 border border-green-300'
-                    : 'bg-gray-50'
-                }`}
+                className={`flex items-center justify-between p-2 rounded transition ${isPresent ? 'bg-green-100 border border-green-300' : 'bg-gray-50'}`}
+
               >
                 <label className="flex items-center gap-2">
                   <input

@@ -7,6 +7,8 @@ import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import Reports from './pages/Reports';
 import TeacherSchedule from './pages/TeacherSchedule';
+
+// Lazy loading das páginas financeiras
 const FinanceEntry = lazy(() => import('./pages/FinanceEntry'));
 const FinanceReport = lazy(() => import('./pages/FinanceReport'));
 
@@ -20,6 +22,7 @@ export default function App() {
           <Suspense fallback={<div className="text-center">Carregando...</div>}>
             <Routes>
               <Route path="/login" element={<Login />} />
+              
               <Route
                 path="/students"
                 element={
@@ -51,7 +54,7 @@ export default function App() {
                     <TeacherSchedule />
                   </PrivateRoute>
                 }
-/>
+              />
               <Route
                 path="/finance-entry"
                 element={
@@ -60,15 +63,16 @@ export default function App() {
                   </PrivateRoute>
                 }
               />
-              {/* ROTA SEM PrivateRoute PARA TESTE */}
               <Route
-              path="/finance-report"
-              element={
-                <PrivateRoute>
-                  <FinanceReport />
-                </PrivateRoute>
-              }
-/>
+                path="/finance-report"
+                element={
+                  <PrivateRoute>
+                    <FinanceReport />
+                  </PrivateRoute>
+                }
+              />
+
+              {/* Redireciona rotas desconhecidas para login */}
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </Suspense>
