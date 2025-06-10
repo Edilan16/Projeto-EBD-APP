@@ -12,6 +12,7 @@
     "@firebasegen/default-connector": "file:dataconnect-generated/js/default-connector",
     "@tanstack/react-query": "^4.36.1",
     "chart.js": "^4.4.9",
+    "chartjs-plugin-datalabels": "^2.2.0",
     "date-fns": "^2.30.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",

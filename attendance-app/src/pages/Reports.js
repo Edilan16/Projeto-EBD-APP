@@ -1,8 +1,6 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { format, parseISO } from 'date-fns';
 import * as XLSX from 'xlsx';
 import { Bar } from 'react-chartjs-2';
 import { jsPDF } from 'jspdf';
@@ -20,10 +18,12 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-export default function ReportsCompleto() {
+export default function Reports() {
   const [records, setRecords] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [page, setPage] = useState(0);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,16 +49,35 @@ export default function ReportsCompleto() {
 
   const resumo = useMemo(() => {
     const mapa = {};
+
     filtered.forEach(r => {
-      if (!mapa[r.studentId]) mapa[r.studentId] = { name: r.studentName, total: 0, presentes: 0 };
-      mapa[r.studentId].total++;
-      if (r.present) mapa[r.studentId].presentes++;
+      if (!r.studentId || !r.studentName) return;
+
+      if (!mapa[r.studentId]) {
+        mapa[r.studentId] = {
+          name: r.studentName,
+          total: 0,
+          presentes: 0
+        };
+      }
+
+      if (r.present !== undefined) {
+        mapa[r.studentId].total += 1;
+      }
+      if (r.present === true) {
+        mapa[r.studentId].presentes += 1;
+      }
     });
-    return Object.values(mapa).map(r => ({
-      ...r,
-      frequencia: ((r.presentes / r.total) * 100).toFixed(1)
-    })).sort((a, b) => b.frequencia - a.frequencia);
+
+    return Object.values(mapa)
+      .map(r => ({
+        ...r,
+        frequencia: r.total > 0 ? ((r.presentes / r.total) * 100).toFixed(1) : '0.0'
+      }))
+      .sort((a, b) => b.frequencia - a.frequencia);
   }, [filtered]);
+
+  const paginatedResumo = resumo.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
 
   const exportToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(resumo);
@@ -77,12 +96,13 @@ export default function ReportsCompleto() {
     doc.save('relatorio_frequencia.pdf');
   };
 
+  const chartResumo = resumo.slice(0, 10); // top 10
   const chartData = {
-    labels: resumo.map(r => r.name),
+    labels: chartResumo.map(r => r.name),
     datasets: [
       {
         label: 'Frequência %',
-        data: resumo.map(r => r.frequencia),
+        data: chartResumo.map(r => r.frequencia),
         backgroundColor: 'rgba(54, 162, 235, 0.7)'
       }
     ]
@@ -124,7 +144,7 @@ export default function ReportsCompleto() {
             </tr>
           </thead>
           <tbody>
-            {resumo.map((r, i) => (
+            {paginatedResumo.map((r, i) => (
               <tr key={i} className="border-t">
                 <td className="px-4 py-2">{r.name}</td>
                 <td className="px-4 py-2">{r.presentes}</td>
@@ -134,9 +154,25 @@ export default function ReportsCompleto() {
             ))}
           </tbody>
         </table>
+        <div className="flex justify-between mt-2">
+          <button
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            className="px-4 py-2 bg-gray-300 rounded"
+          >
+            Anterior
+          </button>
+          <span className="px-4 py-2">Página {page + 1}</span>
+          <button
+            onClick={() => setPage(p => (p + 1) * itemsPerPage < resumo.length ? p + 1 : p)}
+            className="px-4 py-2 bg-gray-300 rounded"
+          >
+            Próxima
+          </button>
+        </div>
       </div>
 
       <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-2">Top 10 Frequência</h3>
         <Bar data={chartData} />
       </div>
     </div>
