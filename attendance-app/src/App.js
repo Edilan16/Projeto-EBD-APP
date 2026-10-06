@@ -3,81 +3,32 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Attendance from './pages/Attendance';
 import Reports from './pages/Reports';
 import TeacherSchedule from './pages/TeacherSchedule';
-
-// Lazy loading das páginas financeiras
+import DataBackup from './pages/DataBackup';
+import UserManagement from './pages/UserManagement';
 const FinanceEntry = lazy(() => import('./pages/FinanceEntry'));
 const FinanceReport = lazy(() => import('./pages/FinanceReport'));
 
 export default function App() {
-  return (
-    <Router>
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
-        <Navbar />
-
-        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 pt-16">
-          <Suspense fallback={<div className="text-center">Carregando...</div>}>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              
-              <Route
-                path="/students"
-                element={
-                  <PrivateRoute>
-                    <Students />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/attendance"
-                element={
-                  <PrivateRoute>
-                    <Attendance />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/reports"
-                element={
-                  <PrivateRoute>
-                    <Reports />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/teacher-schedule"
-                element={
-                  <PrivateRoute>
-                    <TeacherSchedule />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/finance-entry"
-                element={
-                  <PrivateRoute>
-                    <FinanceEntry />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/finance-report"
-                element={
-                  <PrivateRoute>
-                    <FinanceReport />
-                  </PrivateRoute>
-                }
-              />
-
-              {/* Redireciona rotas desconhecidas para login */}
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-          </Suspense>
-        </main>
-      </div>
-    </Router>
-  );
+  return <Router><div className="app-shell"><Navbar/><main className="app-main"><Suspense fallback={<div role="status" className="surface p-8 text-center text-gray-600 dark:text-gray-300">Carregando página…</div>}><Routes>
+    <Route path="/login" element={<Login/>}/>
+    <Route path="/" element={<PrivateRoute><Dashboard/></PrivateRoute>}/>
+    <Route path="/students" element={<PrivateRoute><Students/></PrivateRoute>}/>
+    <Route path="/attendance" element={<PrivateRoute><Attendance/></PrivateRoute>}/>
+    <Route path="/reports" element={<PrivateRoute><Reports/></PrivateRoute>}/>
+    <Route path="/teacher-schedule" element={<PrivateRoute><TeacherSchedule/></PrivateRoute>}/>
+    <Route path="/backup" element={<PrivateRoute roles={['admin']}><DataBackup/></PrivateRoute>}/>
+    <Route path="/users" element={<PrivateRoute roles={['admin']}><UserManagement/></PrivateRoute>}/>
+    <Route path="/finance-entry" element={<PrivateRoute roles={['admin']}><FinanceEntry/></PrivateRoute>}/>
+    <Route path="/finance-report" element={<PrivateRoute roles={['admin']}><FinanceReport/></PrivateRoute>}/>
+    <Route path="*" element={<Navigate to="/" replace/>}/>
+  </Routes></Suspense></main></div></Router>;
 }
+
+
+
+

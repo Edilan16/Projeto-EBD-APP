@@ -15,3 +15,11 @@ root.render(
     <App />
   </QueryClientProvider>
 );
+
+if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(`${process.env.PUBLIC_URL}/service-worker.js`).catch(() => {
+      // O app continua funcionando normalmente quando o service worker não está disponível.
+    });
+  });
+}

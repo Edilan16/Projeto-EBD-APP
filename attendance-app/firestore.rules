@@ -2,18 +2,63 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    function isTeacher() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+    function canTakeAttendance() {
+      return isAdmin() || isTeacher();
+    }
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2025, 6, 26);
+    match /users/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isAdmin() || (
+        signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role == 'teacher'
+        && request.resource.data.keys().hasOnly(['role', 'email', 'displayName', 'createdAt'])
+      );
+      allow update: if isAdmin();
+      allow delete: if isAdmin() && request.auth.uid != userId;
+    }
+
+    match /students/{studentId} {
+      allow read: if canTakeAttendance();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if canTakeAttendance();
+      allow create, update: if canTakeAttendance();
+      allow delete: if isAdmin();
+
+      match /records/{studentId} {
+        allow read, create, update: if canTakeAttendance();
+        allow delete: if isAdmin();
+      }
+    }
+
+    match /teacherSchedules/{scheduleId} {
+      allow read: if canTakeAttendance();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /cashEntries/{entryId} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    match /cashEntriesHistory/{entryId} {
+      allow read, create, update, delete: if isAdmin();
     }
   }
 }
